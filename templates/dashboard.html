@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Social Media Agent Dashboard</title>
+
+    <!-- Bootstrap 5 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background: #0b1220;
+            color: white;
+        }
+        .card {
+            border: none;
+            border-radius: 16px;
+            background: #111a2e;
+        }
+        .badge-soft {
+            background: rgba(13, 202, 240, 0.15);
+            color: #0dcaf0;
+            border: 1px solid rgba(13, 202, 240, 0.35);
+        }
+        .post-card {
+            background: #0f1a33;
+            border-radius: 14px;
+            padding: 15px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .muted-text {
+            color: #94a3b8;
+        }
+        .fw-bold{
+            color: #94a3b8;
+        }
+        .mb-0{
+            color:#94a3b8;
+        }
+        .scroll-box {
+            max-height: 520px;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+        .scroll-box::-webkit-scrollbar {
+            width: 8px;
+        }
+        .scroll-box::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.15);
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container py-4">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">📊 Social Media Manager Agent</h2>
+            <p class="muted-text mb-0">Autonomous scheduling + AI insights dashboard</p>
+        </div>
+        <span class="badge badge-soft px-3 py-2 fs-6">LIVE</span>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card p-3">
+                <h6 class="muted-text">Total Posts Logged</h6>
+                <h3 class="fw-bold" id="totalPosts">0</h3>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card p-3">
+                <h6 class="muted-text">Last Post Time</h6>
+                <h6 class="fw-bold" id="lastPostTime">No posts yet</h6>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card p-3">
+                <h6 class="muted-text">Agent Status</h6>
+                <h5 class="fw-bold text-success">Running</h5>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card p-3">
+                <h6 class="muted-text">Last UI Update</h6>
+                <h5 class="fw-bold" id="lastUpdate">--</h5>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+
+        <!-- Insights Panel -->
+        <div class="col-lg-4">
+            <div class="card p-4">
+                <h5 class="fw-bold mb-3">📌 Audience Insights</h5>
+
+                <div class="mb-3">
+                    <h6 class="muted-text mb-1">Best Posting Times</h6>
+                    <div id="bestTimes">
+                        {% if insights.get("best_posting_times") %}
+                            {% for t in insights["best_posting_times"] %}
+                                <span class="badge badge-soft me-1 mb-1">{{ t }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <p class="muted-text">Not available</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <h6 class="muted-text mb-1">Top Keywords</h6>
+                    <div id="topKeywords">
+                        {% if insights.get("top_keywords") %}
+                            {% for k in insights["top_keywords"] %}
+                                <span class="badge bg-primary me-1 mb-1">{{ k }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <p class="muted-text">Not available</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    <h6 class="muted-text mb-1">Best Topic</h6>
+                    <h5 class="fw-bold" id="bestTopic">
+                        {{ insights.get("best_topic", "Not available") }}
+                    </h5>
+                </div>
+
+                <hr style="border-color: rgba(255,255,255,0.08);" />
+
+                <small class="muted-text">
+                    Insights loaded from <code>data/insights.json</code>
+                </small>
+            </div>
+        </div>
+
+        <!-- Logs Panel -->
+        <div class="col-lg-8">
+            <div class="card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">📝 Post Logs</h5>
+                    <small class="muted-text">Updates every 2 seconds</small>
+                </div>
+
+                <div id="logsContainer" class="scroll-box">
+                    <p class="muted-text">Loading logs...</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center mt-4 muted-text">
+        <small>Hackathon Demo • Social Media Manager AI Agent</small>
+    </div>
+
+</div>
+
+
+<script>
+async function refreshLogs() {
+    try {
+        const response = await fetch("/api/logs");
+        const logs = await response.json();
+
+        // Update total posts
+        document.getElementById("totalPosts").innerText = logs.length;
+
+        // Update last post time
+        if (logs.length > 0) {
+            document.getElementById("lastPostTime").innerText = logs[logs.length - 1].time;
+        } else {
+            document.getElementById("lastPostTime").innerText = "No posts yet";
+        }
+
+        // Update last UI update time
+        document.getElementById("lastUpdate").innerText = new Date().toLocaleTimeString();
+
+        // Show newest first
+        logs.reverse();
+
+        const container = document.getElementById("logsContainer");
+        container.innerHTML = "";
+
+        if (logs.length === 0) {
+            container.innerHTML = `<p class="muted-text">No posts logged yet.</p>`;
+            return;
+        }
+
+        logs.forEach(log => {
+            const postDiv = document.createElement("div");
+            postDiv.className = "post-card mb-3";
+
+            postDiv.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <small class="muted-text">🕒 ${log.time}</small>
+                    <span class="badge bg-success">${log.status}</span>
+                </div>
+                <p class="mb-0">${log.post}</p>
+                <small class="muted-text">📌 Platform: ${log.platform || "Unknown"}</small>
+
+            `;
+
+            container.appendChild(postDiv);
+        });
+
+    } catch (err) {
+        console.error("Error fetching logs:", err);
+    }
+}
+
+// Refresh every 2 seconds
+setInterval(refreshLogs, 2000);
+
+// Run immediately
+refreshLogs();
+</script>
+
+</body>
+</html>
