@@ -38,7 +38,6 @@ social_media_agent/
 ├── requirements.txt # Dependencies
 └── README.md # Documentation
 
-
 ---
 
 ## 🛠 Tech Stack
@@ -123,3 +122,4 @@ Sentiment analysis on comments
 Database support (PostgreSQL / MongoDB)
 
 Multi-platform scheduling + automation
+
